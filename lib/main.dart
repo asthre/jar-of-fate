@@ -92,7 +92,7 @@ class _MainScreenState extends State<MainScreen> {
                           items: const [
                             DropdownMenuItem(
                               value: 'Jar',
-                              child: Text('The Jar'),
+                              child: Text('Jar of Fate'),
                             ),
                             DropdownMenuItem(
                               value: 'Sponty',
@@ -413,7 +413,7 @@ class _JarViewState extends State<JarView> with SingleTickerProviderStateMixin {
                 elevation: 10,
               ),
               child: const Text(
-                "SHAKE THE JAR",
+                "LEARN YOUR FATE",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),

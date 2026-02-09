@@ -1,125 +1,210 @@
 import streamlit as st
 import random
 import time
+import pandas as pd
 
-# --- PAGE SETUP ---
-st.set_page_config(
-    page_title="Jar of Fate",
-    page_icon="🔮",
-    layout="centered",
-    initial_sidebar_state="collapsed"
-)
+# --- 1. CONFIG & STYLE (Your Mobile Theme) ---
+st.set_page_config(page_title="Jar of Fate", page_icon="⚱️", layout="centered")
 
-# --- CUSTOM CSS FOR THE "JAR VIBE" ---
-st.markdown("""
+# Your exact colors from Flutter
+BG_COLOR = "#1A1A2E"
+BG_GRADIENT_END = "#16213E"
+GOLD = "#FFD700"
+PURPLE = "#6C63FF"
+CARD_BG = "#252545"
+
+# Custom CSS to force the Mobile Look
+st.markdown(f"""
     <style>
-    /* Main Background - Dark like the screenshot */
-    .stApp {
-        background-color: #121212;
-        color: #E0E0E0;
-    }
-
-    /* The "Jar" Container Area */
-    .jar-container {
-        background: linear-gradient(135deg, #6200EA, #3700B3); /* Purple gradient */
-        padding: 30px;
-        border-radius: 25px;
-        text-align: center;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        margin-bottom: 25px;
-        border: 2px solid #7C4DFF;
-    }
-
-    /* The Button Styling */
-    div.stButton > button {
-        width: 100%;
-        background: linear-gradient(90deg, #7C4DFF, #651FFF); /* Lighter purple */
+    /* Force Background Color */
+    .stApp {{
+        background: linear-gradient(to bottom, {BG_COLOR}, {BG_GRADIENT_END});
         color: white;
-        border: none;
-        padding: 15px 32px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 18px;
+    }}
+    
+    /* Styled Containers (Cards) */
+    .css-1r6slb0, .stContainer {{
+        background-color: {CARD_BG};
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.1);
+    }}
+
+    /* The "Gold" Highlights */
+    .gold-text {{
+        color: {GOLD};
         font-weight: bold;
-        margin: 4px 2px;
-        cursor: pointer;
-        border-radius: 15px;
-        box-shadow: 0 4px 10px rgba(124, 77, 255, 0.3);
-        transition: all 0.3s ease;
-    }
-    div.stButton > button:hover {
-         background: linear-gradient(90deg, #651FFF, #7C4DFF);
-         transform: translateY(-2px);
-    }
+        font-size: 24px;
+    }}
 
-    /* Input Text Area Styling */
-    .stTextArea textarea {
-        background-color: #1E1E1E;
-        color: #E0E0E0;
-        border-radius: 15px;
-        border: 1px solid #333;
-    }
-
-    /* Headings */
-    h1 { color: #B388FF !important; font-weight: 800; }
-    h3 { color: #D1C4E9 !important; }
+    /* Custom Buttons (Purple) */
+    .stButton>button {{
+        background-color: {PURPLE};
+        color: white;
+        border-radius: 30px;
+        border: none;
+        padding: 10px 24px;
+        font-weight: bold;
+    }}
+    
+    /* Hide the standard header to make it look like an app */
+    header {{visibility: hidden;}}
     </style>
-    """, unsafe_allow_html=True)
-
-# --- HEADER ---
-st.title("🔮 Jar of Fate")
-st.markdown("### Leave your destiny to the jar.")
-
-# --- THE "JAR" VISUAL AREA ---
-# This creates the purple box look from the screenshot
-st.markdown("""
-<div class="jar-container">
-    <h2 style='color: white; margin:0;'>The Jar</h2>
-    <p style='color: #D1C4E9;'>Waiting for items...</p>
-    <h1 style='font-size: 60px; margin: 10px 0;'>∞</h1>
-</div>
 """, unsafe_allow_html=True)
 
+# --- 2. SESSION STATE (Memory) ---
+if 'jar_items' not in st.session_state:
+    st.session_state.jar_items = []
+if 'sponty_items' not in st.session_state:
+    st.session_state.sponty_items = []
+if 'show_list_sheet' not in st.session_state:
+    st.session_state.show_list_sheet = False
+if 'result_view' not in st.session_state:
+    st.session_state.result_view = None # Stores the winner item if we are looking at a result
 
-# --- INPUT SECTION ---
-st.write("📥 **Add to jar...** (Enter one choice per line)")
-user_input = st.text_area(" ", height=120, placeholder="E.g.\nEat\nSleep\nCode\nRepeat")
+# --- 3. HELPER FUNCTIONS ---
+def add_jar_item(item):
+    if item:
+        st.session_state.jar_items.append(item)
 
+def add_sponty_item(item):
+    if item:
+        st.session_state.sponty_items.append(item)
 
-# --- LOGIC & REVEAL ---
-# Using a centered column for the button to look more like mobile
-col1, col2, col3 = st.columns([1, 2, 1])
+# --- 4. APP LAYOUT ---
+
+# Top Bar (Mimicking AppBar)
+col1, col2 = st.columns([3, 1])
+with col1:
+    mode = st.selectbox("Mode", ["⚱️ Jar of Fate", "🎡 Sponty Wheel"], label_visibility="collapsed")
 
 with col2:
-    if st.button("SHAKE THE JAR ✨"):
-        # Process input
-        options = [line.strip() for line in user_input.split('\n') if line.strip()]
-        
-        if len(options) < 2:
-            st.error("⚠️ Please add at least two items to the jar!")
-        else:
-            # Suspense
-            with st.spinner("Shaking..."):
-                time.sleep(1.5)
-            
-            # Result
-            choice = random.choice(options)
-            
-            # Dramatic Reveal Overlay
-            st.markdown(f"""
-                <div style="
-                    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                    background: rgba(0,0,0,0.9); padding: 40px; border-radius: 20px;
-                    text-align: center; z-index: 9999; border: 3px solid #76ff03;
-                    box-shadow: 0 0 30px #76ff03;">
-                    <h3 style='color: #E0E0E0;'>The Jar has spoken:</h3>
-                    <h1 style='color: #76ff03; font-size: 70px; margin-top: 10px; text-transform: uppercase;'>{choice}</h1>
-                    <p style='color: #E0E0E0; margin-top: 20px;'>Click anywhere to close</p>
-                </div>
-            """, unsafe_allow_html=True)
-            st.snow()
+    # The "Action Button" in top right
+    if "Jar" in mode:
+        if st.button("📜 List", help="View Jar Contents"):
+            # Toggle the 'Bottom Sheet' view
+            st.session_state.show_list_sheet = not st.session_state.show_list_sheet
+    else:
+        if st.button("🗑️ Clear"):
+            st.session_state.sponty_items = []
+            st.rerun()
 
-# --- FOOTER ---
-st.write("---")
-st.caption("🔮 Jar of Fate | Created by Asthre")
+st.divider()
+
+# --- 5. LOGIC SWITCHER ---
+
+# ==========================
+# VIEW: THE LIST (Bottom Sheet style)
+# ==========================
+if st.session_state.show_list_sheet and "Jar" in mode:
+    st.markdown("### 📜 Inside the Jar")
+    if not st.session_state.jar_items:
+        st.info("The jar is empty.")
+    else:
+        # Display items with delete buttons
+        for i, item in enumerate(st.session_state.jar_items):
+            c1, c2 = st.columns([4, 1])
+            c1.markdown(f"**{item}**")
+            if c2.button("❌", key=f"del_{i}"):
+                st.session_state.jar_items.pop(i)
+                st.rerun()
+    
+    if st.button("Close List"):
+        st.session_state.show_list_sheet = False
+        st.rerun()
+
+# ==========================
+# VIEW: THE RESULT (Dialog Overlay)
+# ==========================
+elif st.session_state.result_view:
+    # This block mimics your "AlertDialog"
+    st.markdown(f"""
+    <div style="background-color: {CARD_BG}; padding: 30px; border-radius: 20px; text-align: center; border: 2px solid {GOLD};">
+        <h2 style="color: white; margin-bottom: 0;">The Fates Decided:</h2>
+        <h1 style="color: {GOLD}; font-size: 50px; margin-top: 10px;">{st.session_state.result_view}</h1>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.write("") # Spacer
+    
+    b1, b2 = st.columns(2)
+    with b1:
+        if st.button("Keep it", use_container_width=True):
+            st.session_state.result_view = None # Close dialog
+            st.rerun()
+    with b2:
+        if st.button("Done & Remove", use_container_width=True):
+            # Try to remove if it exists (Jar mode logic)
+            if st.session_state.result_view in st.session_state.jar_items:
+                st.session_state.jar_items.remove(st.session_state.result_view)
+            st.session_state.result_view = None # Close dialog
+            st.rerun()
+
+# ==========================
+# VIEW: JAR MODE (Main)
+# ==========================
+elif "Jar" in mode:
+    # Visual Jar Container
+    st.markdown(f"""
+    <div style="
+        height: 250px; 
+        background-color: rgba(255,255,255,0.05); 
+        border: 2px solid rgba(255,255,255,0.2);
+        border-radius: 20px 20px 50px 50px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        margin-bottom: 20px; box-shadow: 0px 0px 30px rgba(108, 99, 255, 0.2);">
+        <div style="font-size: 50px; opacity: 0.5;">⚱️</div>
+        <div style="font-size: 60px; font-weight: bold; color: white;">{len(st.session_state.jar_items)}</div>
+        <div style="color: rgba(255,255,255,0.5);">Items</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # The "Pick" Button
+    center_col = st.columns([1,2,1])
+    with center_col[1]:
+        if st.session_state.jar_items:
+            if st.button("🔮 LEARN YOUR FATE", use_container_width=True):
+                with st.spinner("The Jar is trembling..."):
+                    time.sleep(1.5) # Animation delay
+                    winner = random.choice(st.session_state.jar_items)
+                    st.session_state.result_view = winner
+                    st.rerun()
+        else:
+            st.markdown("<center style='opacity:0.5'>Jar is empty...</center>", unsafe_allow_html=True)
+
+    # Input Bar (Fixed at bottom like chat)
+    new_item = st.chat_input("Add to jar...")
+    if new_item:
+        add_jar_item(new_item)
+        st.rerun()
+
+# ==========================
+# VIEW: SPONTY MODE (Wheel)
+# ==========================
+else:
+    # Using a chart to simulate the wheel visual
+    if len(st.session_state.sponty_items) < 2:
+        st.markdown(f"""
+        <div style="height: 300px; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.3);">
+            <h3>🎡 Add at least 2 items!</h3>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        # Simple Visual Representation of items
+        st.write("Current Options:")
+        # We can't do a real spinning wheel easily in basic Streamlit, 
+        # so we show the options as tags
+        st.markdown(" ".join([f"`{x}`" for x in st.session_state.sponty_items]))
+        
+        st.write("")
+        if st.button("SPIN IT ⚡", use_container_width=True):
+             with st.spinner("Spinning..."):
+                time.sleep(2)
+                winner = random.choice(st.session_state.sponty_items)
+                st.session_state.result_view = winner
+                st.rerun()
+
+    # Input Bar (Fixed at bottom)
+    new_opt = st.chat_input("Add wheel option...")
+    if new_opt:
+        add_sponty_item(new_opt)
+        st.rerun()
