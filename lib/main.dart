@@ -5,16 +5,16 @@ import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(const UltimateDecisionApp());
+  runApp(const JarofFate());
 }
 
-class UltimateDecisionApp extends StatelessWidget {
-  const UltimateDecisionApp({super.key});
+class JarofFate extends StatelessWidget {
+  const JarofFate({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Decide Now',
+      title: 'Jar of Fate',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF1A1A2E),
